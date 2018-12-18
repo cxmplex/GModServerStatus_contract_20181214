@@ -1,19 +1,28 @@
 from windows import WindowsInterface
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import json
+import ssl
 
 
 class Request(BaseHTTPRequestHandler):
     def set_failure_headers(self):
         self.send_response(400)
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
 
     def set_not_started_headers(self):
         self.send_response(503)
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
 
     def set_success_headers(self):
         self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(200)
+        self.send_header('Access-Control-Allow-Origin', '*')
         self.end_headers()
 
     def do_POST(self):
@@ -51,9 +60,12 @@ class Request(BaseHTTPRequestHandler):
 
 
 def run(server_class=HTTPServer, handler_class=Request, port=54321):
-    server_address = ('', port)
+    server_address = ('api.northernlights.network', port)
     httpd = server_class(server_address, handler_class)
-
+    httpd.socket = ssl.wrap_socket(httpd.socket,
+                                   server_side=True,
+                                   certfile='pub.pem',
+                                   keyfile='key.pem')
     print("Starting service on port {}".format(port))
     httpd.serve_forever()
 
